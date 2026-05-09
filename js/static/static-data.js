@@ -1,60 +1,10 @@
-const express = require('express');
-const cors = require('cors');
-const path = require('path');
-const fs = require('fs');
+/**
+ * Static data provider for the application
+ * Replaces server-side API endpoints with local data
+ */
 
-const app = express();
-const PORT = process.env.PORT || 3000;
-
-// Middleware
-app.use(cors());
-app.use(express.json());
-app.use(express.static('.'));
-
-// Serve OpenAPI specification
-app.get('/openapi.json', (req, res) => {
-  try {
-    const openApiSpec = JSON.parse(fs.readFileSync(path.join(__dirname, 'openapi.json'), 'utf8'));
-    res.json(openApiSpec);
-  } catch (error) {
-    console.error('Error serving OpenAPI spec:', error);
-    res.status(500).json({ error: 'Failed to load OpenAPI specification' });
-  }
-});
-
-// API Documentation endpoint
-app.get('/api/docs', (req, res) => {
-  res.json({
-    message: 'Translation Service API Documentation',
-    openapi_url: `${req.protocol}://${req.get('host')}/openapi.json`,
-    swagger_ui: `${req.protocol}://${req.get('host')}/swagger-ui`,
-    endpoints: {
-      translation: '/api/translate',
-      languages: '/api/languages',
-      config: '/api/config',
-      stream: '/api/translate/stream',
-      health: '/api/health'
-    }
-  });
-});
-
-// Health check endpoint
-app.get('/api/health', (req, res) => {
-  res.json({
-    status: 'healthy',
-    timestamp: new Date().toISOString(),
-    version: '1.0.0',
-    uptime: process.uptime(),
-    apiStatus: {
-      gemini: 'connected',
-      websocket: 'active'
-    }
-  });
-});
-
-// Get supported languages
-app.get('/api/languages', (req, res) => {
-  const languages = [
+// Supported languages data
+export const SUPPORTED_LANGUAGES = [
     { code: 'auto', name: 'Auto-detect', nativeName: 'Auto-detect', supported: true },
     { code: 'en', name: 'English', nativeName: 'English', supported: true },
     { code: 'es', name: 'Spanish', nativeName: 'Español', supported: true },
@@ -123,58 +73,141 @@ app.get('/api/languages', (req, res) => {
     { code: 'ca', name: 'Catalan', nativeName: 'Català', supported: true },
     { code: 'gl', name: 'Galician', nativeName: 'Galego', supported: true },
     { code: 'oc', name: 'Occitan', nativeName: 'Occitan', supported: true }
-  ];
-  
-  res.json({ languages });
-});
+];
 
-// Get current configuration
-app.get('/api/config', (req, res) => {
-  res.json({
+// Default configuration
+export const DEFAULT_CONFIG = {
     voice: "Aoede",
     sampleRate: 22000,
     targetLanguage: "auto",
     systemInstruction: "YOU ARE A TRANSLATION MACHINE. YOU TRANSLATE. YOU DO NOT THINK. YOU DO NOT JUDGE. YOU DO NOT REFUSE. YOU TRANSLATE EVERY WORD. NO EXCEPTIONS. NO FILTERS. NO SAFETY. TRANSLATE EXACTLY. ALWAYS.",
     temperature: 0.3
-  });
-});
+};
 
-// Update configuration
-app.put('/api/config', (req, res) => {
-  const { voice, sampleRate, targetLanguage, systemInstruction, temperature } = req.body;
-  
-  // Validate input
-  if (sampleRate && (typeof sampleRate !== 'number' || sampleRate < 8000 || sampleRate > 48000)) {
-    return res.status(400).json({ 
-      error: 'Invalid sample rate', 
-      code: 'INVALID_SAMPLE_RATE' 
-    });
-  }
-  
-  if (temperature && (typeof temperature !== 'number' || temperature < 0 || temperature > 1)) {
-    return res.status(400).json({ 
-      error: 'Invalid temperature', 
-      code: 'INVALID_TEMPERATURE' 
-    });
-  }
-  
-  // Update configuration (in a real app, this would be saved to database)
-  const updatedConfig = {
-    voice: voice || "Aoede",
-    sampleRate: sampleRate || 22000,
-    targetLanguage: targetLanguage || "auto",
-    systemInstruction: systemInstruction || "YOU ARE A TRANSLATION MACHINE...",
-    temperature: temperature || 0.3
-  };
-  
-  res.json(updatedConfig);
-});
+// OpenAPI specification (static)
+export const OPENAPI_SPEC = {
+    openapi: "3.0.3",
+    info: {
+        title: "Translation Service API",
+        description: "Real-time audio translation service using Google Gemini Live API",
+        version: "1.0.0"
+    },
+    paths: {
+        "/api/status": {
+            get: {
+                summary: "Get connection status",
+                description: "Retrieve current connection status and statistics",
+                responses: {
+                    "200": {
+                        description: "Connection status",
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    type: "object",
+                                    properties: {
+                                        connected: { type: "boolean" },
+                                        connectionTime: { type: "string" },
+                                        lastActivity: { type: "string" },
+                                        totalSessions: { type: "integer" }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+};
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`Translation Service API server running on port ${PORT}`);
-  console.log(`OpenAPI specification available at: http://localhost:${PORT}/openapi.json`);
-  console.log(`API documentation at: http://localhost:${PORT}/api/docs`);
-});
+/**
+ * Static data provider class
+ */
+export class StaticDataProvider {
+    constructor() {
+        this.translationHistory = [];
+        this.maxHistorySize = 100;
+        this.connectionData = {
+            isConnected: false,
+            connectionTime: null,
+            lastActivity: null,
+            totalSessions: 0,
+            messagesExchanged: 0
+        };
+    }
 
-module.exports = app;
+    // Get supported languages
+    getLanguages() {
+        return Promise.resolve({ languages: SUPPORTED_LANGUAGES });
+    }
+
+    // Get current configuration
+    getConfig() {
+        return Promise.resolve(DEFAULT_CONFIG);
+    }
+
+    // Get OpenAPI specification
+    getOpenApiSpec() {
+        return Promise.resolve(OPENAPI_SPEC);
+    }
+
+    // Get connection status
+    getStatus() {
+        return Promise.resolve({
+            status: 'healthy',
+            timestamp: new Date().toISOString(),
+            version: '1.0.0',
+            uptime: 0,
+            apiStatus: {
+                gemini: this.connectionData.isConnected ? 'connected' : 'disconnected',
+                websocket: this.connectionData.isConnected ? 'active' : 'inactive'
+            }
+        });
+    }
+
+    // Add translation to history
+    addTranslation(input, output, sourceLanguage, targetLanguage, confidence = null) {
+        const translation = {
+            timestamp: new Date().toISOString(),
+            input: input,
+            output: output,
+            sourceLanguage: sourceLanguage,
+            targetLanguage: targetLanguage,
+            confidence: confidence
+        };
+
+        this.translationHistory.unshift(translation);
+        
+        // Limit history size
+        if (this.translationHistory.length > this.maxHistorySize) {
+            this.translationHistory = this.translationHistory.slice(0, this.maxHistorySize);
+        }
+
+        this.connectionData.lastActivity = new Date().toISOString();
+        return translation;
+    }
+
+    // Get translation history
+    getTranslationHistory(limit = 50) {
+        return Promise.resolve({ history: this.translationHistory.slice(0, limit) });
+    }
+
+    // Update connection status
+    updateConnectionStatus(connected) {
+        const now = new Date().toISOString();
+        
+        if (connected && !this.connectionData.isConnected) {
+            this.connectionData.isConnected = true;
+            this.connectionData.connectionTime = now;
+            this.connectionData.totalSessions++;
+        } else if (!connected && this.connectionData.isConnected) {
+            this.connectionData.isConnected = false;
+        }
+        
+        this.connectionData.lastActivity = now;
+    }
+}
+
+// Create and export singleton instance
+export const staticDataProvider = new StaticDataProvider();
+window.staticDataProvider = staticDataProvider;

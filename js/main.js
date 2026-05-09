@@ -5,9 +5,9 @@ import { CONFIG } from "./config/config.js"
 import { Logger } from "./utils/logger.js"
 import { VideoManager } from "./video/video-manager.js"
 import { ScreenRecorder } from "./video/screen-recorder.js"
-import "./api/api-server.js"
 import { searchMemory, addMemory } from "./utils/memory.js" // Import Memo AI functions
 import { ApplicationError } from "./utils/error-boundary.js"
+import { staticDataProvider } from "./static/static-data.js"
 
 /**
  * @fileoverview Main entry point for the application.

@@ -1,0 +1,1479 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Eburon AI Live Audio API",
+    "description": "Comprehensive real-time audio system with Eburon AI Live Audio API. Provides instant translation between 80+ languages with voice input and output. Features Speech-to-Text (STT), Text-to-Speech (TTS), system prompt management, real-time audio streaming, translation, and conversational AI capabilities.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Eburon AI Support",
+      "email": "support@eburon.ai"
+    },
+    "license": {
+      "name": "MIT",
+      "url": "https://opensource.org/licenses/MIT"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000",
+      "description": "Development server"
+    },
+    {
+      "url": "https://translation-service.example.com",
+      "description": "Production server"
+    }
+  ],
+  "paths": {
+    "/api/audio/stream": {
+      "post": {
+        "summary": "Start real-time audio streaming",
+        "description": "Initiate real-time bidirectional audio streaming with Eburon AI STT and TTS",
+        "tags": ["Audio Streaming"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "sampleRate": {
+                    "type": "integer",
+                    "description": "Audio sample rate in Hz",
+                    "example": 16000
+                  },
+                  "channels": {
+                    "type": "integer",
+                    "description": "Number of audio channels",
+                    "example": 1
+                  },
+                  "voice": {
+                    "type": "string",
+                    "description": "TTS voice name",
+                    "example": "Aoede"
+                  }
+                },
+                "required": ["sampleRate"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Streaming session established",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StreamingSession"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/stt/transcribe": {
+      "post": {
+        "summary": "Speech-to-Text transcription",
+        "description": "Convert audio input to text using advanced STT",
+        "tags": ["Speech-to-Text"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "audio": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "Audio file to transcribe (WAV, MP3, M4A)"
+                  },
+                  "language": {
+                    "type": "string",
+                    "description": "Source language code (optional, auto-detected if not provided)",
+                    "example": "en"
+                  },
+                  "enhanced": {
+                    "type": "boolean",
+                    "description": "Use enhanced transcription model",
+                    "example": true
+                  }
+                },
+                "required": ["audio"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Transcription successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TranscriptionResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tts/synthesize": {
+      "post": {
+        "summary": "Text-to-Speech synthesis",
+        "description": "Convert text to natural-sounding speech",
+        "tags": ["Text-to-Speech"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "text": {
+                    "type": "string",
+                    "description": "Text to synthesize",
+                    "example": "Hello, how are you today?"
+                  },
+                  "voice": {
+                    "type": "string",
+                    "description": "Voice name for synthesis",
+                    "example": "Aoede"
+                  },
+                  "language": {
+                    "type": "string",
+                    "description": "Target language code",
+                    "example": "en"
+                  },
+                  "speed": {
+                    "type": "number",
+                    "format": "float",
+                    "description": "Speech speed (0.5-2.0)",
+                    "example": 1.0
+                  }
+                },
+                "required": ["text"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Speech synthesis successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SynthesisResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/prompt/system": {
+      "get": {
+        "summary": "Get system prompt",
+        "description": "Retrieve current system prompt configuration",
+        "tags": ["System Prompt"],
+        "responses": {
+          "200": {
+            "description": "System prompt retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SystemPrompt"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "summary": "Update system prompt",
+        "description": "Update the AI system prompt for behavior control",
+        "tags": ["System Prompt"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "prompt": {
+                    "type": "string",
+                    "description": "New system prompt text",
+                    "example": "You are a helpful AI assistant..."
+                  },
+                  "temperature": {
+                    "type": "number",
+                    "format": "float",
+                    "description": "AI model temperature (0-1)",
+                    "example": 0.7
+                  }
+                },
+                "required": ["prompt"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "System prompt updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SystemPrompt"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/conversation/chat": {
+      "post": {
+        "summary": "Send chat message",
+        "description": "Send a message to the AI and receive response",
+        "tags": ["Conversation"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "message": {
+                    "type": "string",
+                    "description": "User message",
+                    "example": "Tell me about artificial intelligence"
+                  },
+                  "context": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "role": { "type": "string" },
+                        "content": { "type": "string" }
+                      }
+                    },
+                    "description": "Conversation context"
+                  }
+                },
+                "required": ["message"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Chat response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/translate": {
+      "post": {
+        "summary": "Translate text or audio",
+        "description": "Translate text or audio between languages",
+        "tags": ["Translation"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "input": {
+                    "type": "string",
+                    "description": "Text to translate or audio data"
+                  },
+                  "sourceLanguage": {
+                    "type": "string",
+                    "description": "Source language code",
+                    "example": "en"
+                  },
+                  "targetLanguage": {
+                    "type": "string",
+                    "description": "Target language code",
+                    "example": "es"
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": ["text", "audio"],
+                    "description": "Input type",
+                    "example": "text"
+                  }
+                },
+                "required": ["input", "targetLanguage"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Translation successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TranslationResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/languages": {
+      "get": {
+        "summary": "Get supported languages",
+        "description": "Retrieve list of supported languages for translation",
+        "tags": ["Languages"],
+        "responses": {
+          "200": {
+            "description": "List of supported languages",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LanguagesResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/config": {
+      "get": {
+        "summary": "Get current configuration",
+        "description": "Retrieve current translation service configuration",
+        "tags": ["Configuration"],
+        "responses": {
+          "200": {
+            "description": "Current configuration",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Configuration"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "summary": "Update configuration",
+        "description": "Update translation service configuration",
+        "tags": ["Configuration"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfigurationUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Configuration updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Configuration"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid configuration",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/translate/stream": {
+      "post": {
+        "summary": "Real-time translation streaming",
+        "description": "Establish WebSocket connection for real-time audio translation streaming",
+        "tags": ["Translation"],
+        "responses": {
+          "101": {
+            "description": "WebSocket connection established"
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/server/start": {
+      "post": {
+        "summary": "Start the server",
+        "description": "Start the Eburon AI Live Audio server and initialize WebSocket connections",
+        "tags": ["Server Control"],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "autoConnect": {
+                    "type": "boolean",
+                    "description": "Automatically connect to WebSocket on start",
+                    "example": true
+                  },
+                  "config": {
+                    "type": "object",
+                    "description": "Server configuration options",
+                    "properties": {
+                      "voice": { "type": "string", "example": "Aoede" },
+                      "sampleRate": { "type": "integer", "example": 16000 },
+                      "temperature": { "type": "number", "example": 0.3 }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Server started successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServerStatus"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Failed to start server",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/server/stop": {
+      "post": {
+        "summary": "Stop the server",
+        "description": "Stop the Eburon AI Live Audio server and close all connections",
+        "tags": ["Server Control"],
+        "responses": {
+          "200": {
+            "description": "Server stopped successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServerStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/server/status": {
+      "get": {
+        "summary": "Get server status",
+        "description": "Get current server status and connection information",
+        "tags": ["Server Control"],
+        "responses": {
+          "200": {
+            "description": "Server status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServerStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/connection/connect": {
+      "post": {
+        "summary": "Connect to WebSocket",
+        "description": "Establish WebSocket connection to the Eburon AI service",
+        "tags": ["Connection Management"],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "config": {
+                    "type": "object",
+                    "description": "Connection configuration",
+                    "properties": {
+                      "voice": { "type": "string", "example": "Aoede" },
+                      "sampleRate": { "type": "integer", "example": 16000 },
+                      "targetLanguage": { "type": "string", "example": "auto" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Connection established",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConnectionStatus"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Connection failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/connection/disconnect": {
+      "post": {
+        "summary": "Disconnect from WebSocket",
+        "description": "Close WebSocket connection and cleanup resources",
+        "tags": ["Connection Management"],
+        "responses": {
+          "200": {
+            "description": "Disconnected successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConnectionStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/connection/status": {
+      "get": {
+        "summary": "Get connection status",
+        "description": "Get current WebSocket connection status and statistics",
+        "tags": ["Connection Management"],
+        "responses": {
+          "200": {
+            "description": "Connection status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConnectionStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/health": {
+      "get": {
+        "summary": "Health check",
+        "description": "Check if the Eburon AI Live Audio service is running and accessible",
+        "tags": ["Health"],
+        "responses": {
+          "200": {
+            "description": "Service is healthy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/audio/microphone/start": {
+      "post": {
+        "summary": "Start microphone recording",
+        "description": "Start recording audio from the microphone for real-time processing",
+        "tags": ["Audio Streaming"],
+        "responses": {
+          "200": {
+            "description": "Microphone started successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AudioResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/audio/microphone/stop": {
+      "post": {
+        "summary": "Stop microphone recording",
+        "description": "Stop recording audio from the microphone",
+        "tags": ["Audio Streaming"],
+        "responses": {
+          "200": {
+            "description": "Microphone stopped successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AudioResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/video/camera/start": {
+      "post": {
+        "summary": "Start camera capture",
+        "description": "Start capturing video from the camera",
+        "tags": ["Video Streaming"],
+        "responses": {
+          "200": {
+            "description": "Camera started successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VideoResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/video/camera/stop": {
+      "post": {
+        "summary": "Stop camera capture",
+        "description": "Stop capturing video from the camera",
+        "tags": ["Video Streaming"],
+        "responses": {
+          "200": {
+            "description": "Camera stopped successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VideoResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/video/screen/start": {
+      "post": {
+        "summary": "Start screen sharing",
+        "description": "Start sharing the screen content",
+        "tags": ["Video Streaming"],
+        "responses": {
+          "200": {
+            "description": "Screen sharing started successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VideoResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/video/screen/stop": {
+      "post": {
+        "summary": "Stop screen sharing",
+        "description": "Stop sharing the screen content",
+        "tags": ["Video Streaming"],
+        "responses": {
+          "200": {
+            "description": "Screen sharing stopped successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VideoResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/conversation/message": {
+      "post": {
+        "summary": "Send message to AI",
+        "description": "Send a text message to the AI for processing",
+        "tags": ["Conversation"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "message": {
+                    "type": "string",
+                    "description": "Message to send to the AI",
+                    "example": "Hello, how are you?"
+                  }
+                },
+                "required": ["message"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Message sent successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/config/language": {
+      "put": {
+        "summary": "Update target language",
+        "description": "Update the target language for translation",
+        "tags": ["Configuration"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "language": {
+                    "type": "string",
+                    "description": "Target language code",
+                    "example": "es"
+                  }
+                },
+                "required": ["language"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Language updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConfigResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/config/voice": {
+      "put": {
+        "summary": "Update voice settings",
+        "description": "Update the voice configuration for TTS",
+        "tags": ["Configuration"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "voice": {
+                    "type": "string",
+                    "description": "Voice name",
+                    "example": "Aoede"
+                  }
+                },
+                "required": ["voice"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Voice updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConfigResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/config/prompt": {
+      "put": {
+        "summary": "Update system prompt",
+        "description": "Update the system prompt for AI behavior",
+        "tags": ["Configuration"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "prompt": {
+                    "type": "string",
+                    "description": "System prompt text",
+                    "example": "You are a helpful AI assistant."
+                  }
+                },
+                "required": ["prompt"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Prompt updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConfigResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "StreamingSession": {
+        "type": "object",
+        "properties": {
+          "sessionId": {
+            "type": "string",
+            "description": "Unique streaming session identifier",
+            "example": "session_abc123"
+          },
+          "websocketUrl": {
+            "type": "string",
+            "format": "uri",
+            "description": "WebSocket URL for real-time communication",
+            "example": "wss://api.example.com/ws/session_abc123"
+          },
+          "sampleRate": {
+            "type": "integer",
+            "description": "Audio sample rate for the session",
+            "example": 16000
+          },
+          "channels": {
+            "type": "integer",
+            "description": "Number of audio channels",
+            "example": 1
+          },
+          "voice": {
+            "type": "string",
+            "description": "TTS voice for the session",
+            "example": "Aoede"
+          }
+        }
+      },
+      "TranscriptionResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "text": {
+            "type": "string",
+            "description": "Transcribed text",
+            "example": "Hello, how are you today?"
+          },
+          "confidence": {
+            "type": "number",
+            "format": "float",
+            "description": "Transcription confidence score (0-1)",
+            "example": 0.98
+          },
+          "language": {
+            "type": "string",
+            "description": "Detected language code",
+            "example": "en"
+          },
+          "duration": {
+            "type": "number",
+            "format": "float",
+            "description": "Audio duration in seconds",
+            "example": 3.5
+          }
+        }
+      },
+      "SynthesisResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "audioUrl": {
+            "type": "string",
+            "format": "uri",
+            "description": "URL to generated audio file",
+            "example": "/api/audio/synthesized_xyz789.wav"
+          },
+          "text": {
+            "type": "string",
+            "description": "Original text that was synthesized",
+            "example": "Hello, how are you today?"
+          },
+          "voice": {
+            "type": "string",
+            "description": "Voice used for synthesis",
+            "example": "Aoede"
+          },
+          "duration": {
+            "type": "number",
+            "format": "float",
+            "description": "Generated audio duration in seconds",
+            "example": 2.1
+          }
+        }
+      },
+      "SystemPrompt": {
+        "type": "object",
+        "properties": {
+          "prompt": {
+            "type": "string",
+            "description": "Current system prompt text",
+            "example": "You are a helpful AI assistant..."
+          },
+          "temperature": {
+            "type": "number",
+            "format": "float",
+            "description": "AI model temperature (0-1)",
+            "example": 0.7
+          },
+          "maxTokens": {
+            "type": "integer",
+            "description": "Maximum response tokens",
+            "example": 1000
+          },
+          "model": {
+            "type": "string",
+            "description": "AI model being used",
+            "example": "eburon-ai-live-audio-preview"
+          }
+        }
+      },
+      "ChatResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "response": {
+            "type": "string",
+            "description": "AI response text",
+            "example": "Artificial intelligence is a field of computer science..."
+          },
+          "context": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "role": { "type": "string" },
+                "content": { "type": "string" }
+              }
+            },
+            "description": "Updated conversation context"
+          },
+          "tokensUsed": {
+            "type": "integer",
+            "description": "Tokens used in this response",
+            "example": 156
+          }
+        }
+      },
+      "TranslationResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "translatedText": {
+            "type": "string",
+            "description": "Translated text",
+            "example": "Hola, ¿cómo estás?"
+          },
+          "sourceLanguage": {
+            "type": "string",
+            "description": "Detected or specified source language",
+            "example": "en"
+          },
+          "targetLanguage": {
+            "type": "string",
+            "description": "Target language",
+            "example": "es"
+          },
+          "confidence": {
+            "type": "number",
+            "format": "float",
+            "description": "Translation confidence score (0-1)",
+            "example": 0.95
+          },
+          "audioUrl": {
+            "type": "string",
+            "format": "uri",
+            "description": "URL to translated audio file (if requested)",
+            "example": "/api/audio/translated_abc123.wav"
+          }
+        }
+      },
+      "LanguagesResponse": {
+        "type": "object",
+        "properties": {
+          "languages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Language"
+            }
+          }
+        }
+      },
+      "Language": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "ISO 639-1 language code",
+            "example": "es"
+          },
+          "name": {
+            "type": "string",
+            "description": "Language name in English",
+            "example": "Spanish"
+          },
+          "nativeName": {
+            "type": "string",
+            "description": "Language name in its native script",
+            "example": "Español"
+          },
+          "supported": {
+            "type": "boolean",
+            "description": "Whether this language is fully supported",
+            "example": true
+          }
+        }
+      },
+      "Configuration": {
+        "type": "object",
+        "properties": {
+          "voice": {
+            "type": "string",
+            "description": "Voice name for audio output",
+            "example": "Aoede"
+          },
+          "sampleRate": {
+            "type": "integer",
+            "description": "Audio sample rate in Hz",
+            "example": 22000
+          },
+          "targetLanguage": {
+            "type": "string",
+            "description": "Default target language",
+            "example": "es"
+          },
+          "systemInstruction": {
+            "type": "string",
+            "description": "System instruction for the AI model",
+            "example": "YOU ARE A TRANSLATION MACHINE..."
+          },
+          "temperature": {
+            "type": "number",
+            "format": "float",
+            "description": "AI model temperature (0-1)",
+            "example": 0.3
+          }
+        }
+      },
+      "ConfigurationUpdate": {
+        "type": "object",
+        "properties": {
+          "voice": {
+            "type": "string",
+            "description": "Voice name for audio output"
+          },
+          "sampleRate": {
+            "type": "integer",
+            "description": "Audio sample rate in Hz"
+          },
+          "targetLanguage": {
+            "type": "string",
+            "description": "Default target language"
+          },
+          "systemInstruction": {
+            "type": "string",
+            "description": "System instruction for the AI model"
+          },
+          "temperature": {
+            "type": "number",
+            "format": "float",
+            "description": "AI model temperature (0-1)"
+          }
+        }
+      },
+      "HealthResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "example": "healthy"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2025-01-09T11:30:00Z"
+          },
+          "version": {
+            "type": "string",
+            "example": "1.0.0"
+          },
+          "uptime": {
+            "type": "string",
+            "description": "Service uptime",
+            "example": "2h 15m 30s"
+          },
+          "apiStatus": {
+            "type": "object",
+            "properties": {
+              "gemini": {
+                "type": "string",
+                "example": "connected"
+              },
+              "websocket": {
+                "type": "string",
+                "example": "active"
+              }
+            }
+          }
+        }
+      },
+      "ServerStatus": {
+        "type": "object",
+        "properties": {
+          "running": {
+            "type": "boolean",
+            "description": "Whether the server is running",
+            "example": true
+          },
+          "startTime": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Server start time",
+            "example": "2025-01-09T11:30:00Z"
+          },
+          "uptime": {
+            "type": "string",
+            "description": "Server uptime in human readable format",
+            "example": "2h 15m 30s"
+          },
+          "version": {
+            "type": "string",
+            "description": "Server version",
+            "example": "1.0.0"
+          },
+          "connected": {
+            "type": "boolean",
+            "description": "Whether WebSocket is connected",
+            "example": true
+          },
+          "activeConnections": {
+            "type": "integer",
+            "description": "Number of active connections",
+            "example": 1
+          },
+          "config": {
+            "type": "object",
+            "description": "Current server configuration",
+            "properties": {
+              "voice": { "type": "string", "example": "Aoede" },
+              "sampleRate": { "type": "integer", "example": 16000 },
+              "temperature": { "type": "number", "example": 0.3 }
+            }
+          }
+        }
+      },
+      "ConnectionStatus": {
+        "type": "object",
+        "properties": {
+          "connected": {
+            "type": "boolean",
+            "description": "WebSocket connection status",
+            "example": true
+          },
+          "connectionTime": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Time when connection was established",
+            "example": "2025-01-09T11:35:00Z"
+          },
+          "lastActivity": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Last activity timestamp",
+            "example": "2025-01-09T11:40:00Z"
+          },
+          "uptime": {
+            "type": "integer",
+            "description": "Connection uptime in milliseconds",
+            "example": 300000
+          },
+          "totalSessions": {
+            "type": "integer",
+            "description": "Total number of sessions",
+            "example": 5
+          },
+          "websocketUrl": {
+            "type": "string",
+            "format": "uri",
+            "description": "WebSocket URL",
+            "example": "wss://generativelanguage.googleapis.com/ws/..."
+          },
+          "model": {
+            "type": "string",
+            "description": "AI model being used",
+            "example": "eburon-ai-live-audio-preview"
+          },
+          "messagesExchanged": {
+            "type": "integer",
+            "description": "Total messages exchanged in current session",
+            "example": 25
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "description": "Error message",
+            "example": "Invalid target language"
+          },
+          "code": {
+            "type": "string",
+            "description": "Error code",
+            "example": "INVALID_LANGUAGE"
+          },
+          "details": {
+            "type": "object",
+            "description": "Additional error details"
+          }
+        }
+      },
+      "AudioResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "description": "Whether the audio operation was successful",
+            "example": true
+          },
+          "isRecording": {
+            "type": "boolean",
+            "description": "Current recording state",
+            "example": true
+          },
+          "message": {
+            "type": "string",
+            "description": "Status message",
+            "example": "Microphone started successfully"
+          }
+        }
+      },
+      "VideoResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "description": "Whether the video operation was successful",
+            "example": true
+          },
+          "isActive": {
+            "type": "boolean",
+            "description": "Current video state",
+            "example": true
+          },
+          "source": {
+            "type": "string",
+            "description": "Video source (camera/screen)",
+            "example": "camera"
+          },
+          "message": {
+            "type": "string",
+            "description": "Status message",
+            "example": "Camera started successfully"
+          }
+        }
+      },
+      "ConfigResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "description": "Whether the configuration update was successful",
+            "example": true
+          },
+          "updated": {
+            "type": "string",
+            "description": "Configuration field that was updated",
+            "example": "language"
+          },
+          "newValue": {
+            "type": "string",
+            "description": "New value that was set",
+            "example": "es"
+          },
+          "message": {
+            "type": "string",
+            "description": "Status message",
+            "example": "Language updated successfully"
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "ApiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-API-Key",
+        "description": "API key for authentication"
+      }
+    }
+  },
+  "security": [
+    {
+      "ApiKeyAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Server Control",
+      "description": "Server start/stop and status management"
+    },
+    {
+      "name": "Connection Management",
+      "description": "WebSocket connection control and monitoring"
+    },
+    {
+      "name": "Audio Streaming",
+      "description": "Real-time audio streaming and WebSocket connections"
+    },
+    {
+      "name": "Speech-to-Text",
+      "description": "Audio transcription and speech recognition"
+    },
+    {
+      "name": "Text-to-Speech",
+      "description": "Speech synthesis and voice generation"
+    },
+    {
+      "name": "System Prompt",
+      "description": "AI system prompt management and configuration"
+    },
+    {
+      "name": "Conversation",
+      "description": "AI chat and conversational interactions"
+    },
+    {
+      "name": "Translation",
+      "description": "Text and audio translation between languages"
+    },
+    {
+      "name": "Languages",
+      "description": "Language management and support"
+    },
+    {
+      "name": "Configuration",
+      "description": "Service configuration and settings"
+    },
+    {
+      "name": "Health",
+      "description": "Health monitoring and status checks"
+    },
+    {
+      "name": "Audio Streaming",
+      "description": "Microphone and audio streaming controls"
+    },
+    {
+      "name": "Video Streaming",
+      "description": "Camera and screen sharing controls"
+    },
+    {
+      "name": "Conversation",
+      "description": "Chat and messaging endpoints"
+    },
+    {
+      "name": "Configuration",
+      "description": "System configuration and settings"
+    }
+  ]
+}

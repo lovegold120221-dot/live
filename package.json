@@ -1,0 +1,27 @@
+{
+  "name": "translation-service",
+  "version": "1.0.0",
+  "description": "Real-time audio translation service using Google Gemini Live API",
+  "main": "index.html",
+  "scripts": {
+    "start": "echo 'Static app - open index.html in browser'",
+    "dev": "echo 'Static app - open index.html in browser'",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "translation",
+    "audio",
+    "gemini",
+    "real-time",
+    "static",
+    "web-app"
+  ],
+  "author": "Translation Service Team",
+  "license": "MIT",
+  "dependencies": {},
+  "devDependencies": {},
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "type": "module"
+}

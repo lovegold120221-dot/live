@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Translation API Dashboard</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f7;
+            color: #333;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .header {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .card h3 {
+            margin-top: 0;
+            color: #7c5cff;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .status-connected { background: #34a853; }
+        .status-disconnected { background: #ea4335; }
+        .btn {
+            background: #7c5cff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .btn:hover { background: #9579ff; }
+        .btn.secondary { background: #6c757d; }
+        .btn.secondary:hover { background: #5a6268; }
+        pre {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+        .translation-item {
+            background: #f8f9fa;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 6px;
+            border-left: 4px solid #7c5cff;
+        }
+        .translation-item .timestamp {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 8px;
+        }
+        .translation-item .input {
+            font-weight: bold;
+            color: #333;
+        }
+        .translation-item .output {
+            color: #7c5cff;
+            margin-top: 8px;
+        }
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            margin: 15px 0;
+        }
+        .stat-item {
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #7c5cff;
+        }
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Translation API Dashboard</h1>
+            <p>Real-time monitoring and data access for the Translation Service</p>
+        </div>
+
+        <div class="grid">
+            <!-- Connection Status -->
+            <div class="card">
+                <h3>Connection Status</h3>
+                <div id="connection-status">
+                    <span class="status-indicator status-disconnected"></span>
+                    <span id="status-text">Disconnected</span>
+                </div>
+                <div class="stats">
+                    <div class="stat-item">
+                        <div class="stat-value" id="total-sessions">0</div>
+                        <div class="stat-label">Total Sessions</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="uptime">0s</div>
+                        <div class="stat-label">Uptime</div>
+                    </div>
+                </div>
+                <button class="btn" onclick="refreshStatus()">Refresh Status</button>
+            </div>
+
+            <!-- Configuration -->
+            <div class="card">
+                <h3>Current Configuration</h3>
+                <div id="config-display">
+                    <pre>Loading configuration...</pre>
+                </div>
+                <button class="btn" onclick="refreshConfig()">Refresh Config</button>
+            </div>
+
+            <!-- Supported Languages -->
+            <div class="card">
+                <h3>Supported Languages</h3>
+                <div id="languages-display">
+                    <pre>Loading languages...</pre>
+                </div>
+                <button class="btn" onclick="refreshLanguages()">Refresh Languages</button>
+            </div>
+        </div>
+
+        <!-- Translation History -->
+        <div class="card">
+            <h3>Recent Translation History</h3>
+            <div id="translation-history">
+                <p>Loading translation history...</p>
+            </div>
+            <div style="margin-top: 15px;">
+                <button class="btn" onclick="refreshHistory()">Refresh History</button>
+                <button class="btn secondary" onclick="clearHistory()">Clear History</button>
+                <button class="btn secondary" onclick="exportData()">Export All Data</button>
+            </div>
+        </div>
+
+        <!-- API Endpoints -->
+        <div class="card">
+            <h3>API Endpoints</h3>
+            <div id="api-endpoints">
+                <pre>Loading API endpoints...</pre>
+            </div>
+            <button class="btn" onclick="refreshOpenAPI()">Refresh OpenAPI Spec</button>
+        </div>
+    </div>
+
+    <script>
+        // Check if we're on the main page or standalone
+        const isStandalone = !window.location.href.includes('index.html');
+        
+        // If standalone, we need to load the API server
+        if (isStandalone) {
+            // Create a simple API server simulation
+            window.translationAPIServer = {
+                connectionData: { isConnected: false, connectionTime: null, lastActivity: null, totalSessions: 0 },
+                translationHistory: [],
+                updateConnectionStatus: function(connected) {
+                    const now = new Date().toISOString();
+                    if (connected && !this.connectionData.isConnected) {
+                        this.connectionData.isConnected = true;
+                        this.connectionData.connectionTime = now;
+                        this.connectionData.totalSessions++;
+                    } else if (!connected && this.connectionData.isConnected) {
+                        this.connectionData.isConnected = false;
+                    }
+                    this.connectionData.lastActivity = now;
+                },
+                addTranslation: function(input, output, sourceLang, targetLang) {
+                    this.translationHistory.unshift({
+                        timestamp: new Date().toISOString(),
+                        input: input,
+                        output: output,
+                        sourceLanguage: sourceLang,
+                        targetLanguage: targetLang
+                    });
+                    if (this.translationHistory.length > 100) {
+                        this.translationHistory = this.translationHistory.slice(0, 100);
+                    }
+                },
+                getConnectionStatus: function() {
+                    return { ...this.connectionData };
+                },
+                getTranslationHistory: function(limit = 50) {
+                    return this.translationHistory.slice(0, limit);
+                },
+                getCurrentConfiguration: function() {
+                    return {
+                        voice: 'Aoede',
+                        sampleRate: 22000,
+                        targetLanguage: 'auto',
+                        systemInstruction: 'YOU ARE A TRANSLATION MACHINE...',
+                        temperature: 0.3
+                    };
+                },
+                getSupportedLanguages: function() {
+                    return [
+                        { code: 'auto', name: 'Auto-detect', nativeName: 'Auto-detect' },
+                        { code: 'en', name: 'English', nativeName: 'English' },
+                        { code: 'es', name: 'Spanish', nativeName: 'Español' },
+                        { code: 'fr', name: 'French', nativeName: 'Français' }
+                    ];
+                },
+                exportData: function() {
+                    return {
+                        connectionData: this.getConnectionStatus(),
+                        translationHistory: this.getTranslationHistory(),
+                        configuration: this.getCurrentConfiguration(),
+                        languages: this.getSupportedLanguages(),
+                        exportTime: new Date().toISOString()
+                    };
+                }
+            };
+        }
+
+        function updateConnectionStatus() {
+            const status = window.translationAPIServer.getConnectionStatus();
+            const statusIndicator = document.querySelector('.status-indicator');
+            const statusText = document.getElementById('status-text');
+            
+            statusIndicator.className = `status-indicator ${status.isConnected ? 'status-connected' : 'status-disconnected'}`;
+            statusText.textContent = status.isConnected ? 'Connected' : 'Disconnected';
+            
+            document.getElementById('total-sessions').textContent = status.totalSessions || 0;
+            
+            if (status.isConnected && status.connectionTime) {
+                const uptime = Math.floor((Date.now() - new Date(status.connectionTime).getTime()) / 1000);
+                document.getElementById('uptime').textContent = formatUptime(uptime);
+            } else {
+                document.getElementById('uptime').textContent = '0s';
+            }
+        }
+
+        function formatUptime(seconds) {
+            if (seconds < 60) return `${seconds}s`;
+            if (seconds < 3600) return `${Math.floor(seconds / 60)}m ${seconds % 60}s`;
+            return `${Math.floor(seconds / 3600)}h ${Math.floor((seconds % 3600) / 60)}m`;
+        }
+
+        function updateConfiguration() {
+            const config = window.translationAPIServer.getCurrentConfiguration();
+            document.getElementById('config-display').innerHTML = `<pre>${JSON.stringify(config, null, 2)}</pre>`;
+        }
+
+        function updateLanguages() {
+            const languages = window.translationAPIServer.getSupportedLanguages();
+            const languagesHtml = languages.slice(0, 10).map(lang => 
+                `${lang.code}: ${lang.name} (${lang.nativeName})`
+            ).join('\n');
+            document.getElementById('languages-display').innerHTML = 
+                `<pre>${languagesHtml}\n\n... and ${languages.length - 10} more languages</pre>`;
+        }
+
+        function updateTranslationHistory() {
+            const history = window.translationAPIServer.getTranslationHistory(10);
+            const historyHtml = history.map(item => `
+                <div class="translation-item">
+                    <div class="timestamp">${new Date(item.timestamp).toLocaleString()}</div>
+                    <div class="input">Input: ${item.input}</div>
+                    <div class="output">Output: ${item.output}</div>
+                    <div style="font-size: 12px; color: #666; margin-top: 4px;">
+                        ${item.sourceLanguage} → ${item.targetLanguage}
+                    </div>
+                </div>
+            `).join('');
+            
+            document.getElementById('translation-history').innerHTML = 
+                historyHtml || '<p>No translation history available</p>';
+        }
+
+        function updateOpenAPI() {
+            const openApiSpec = {
+                openapi: "3.0.3",
+                info: {
+                    title: "Translation Service API",
+                    description: "Real-time audio translation service",
+                    version: "1.0.0"
+                },
+                paths: {
+                    "/api/status": {
+                        get: { summary: "Get connection status" }
+                    },
+                    "/api/translations": {
+                        get: { summary: "Get translation history" }
+                    },
+                    "/api/config": {
+                        get: { summary: "Get current configuration" }
+                    },
+                    "/api/languages": {
+                        get: { summary: "Get supported languages" }
+                    }
+                }
+            };
+            
+            document.getElementById('api-endpoints').innerHTML = 
+                `<pre>${JSON.stringify(openApiSpec, null, 2)}</pre>`;
+        }
+
+        function refreshStatus() {
+            updateConnectionStatus();
+        }
+
+        function refreshConfig() {
+            updateConfiguration();
+        }
+
+        function refreshLanguages() {
+            updateLanguages();
+        }
+
+        function refreshHistory() {
+            updateTranslationHistory();
+        }
+
+        function clearHistory() {
+            if (confirm('Are you sure you want to clear all translation history?')) {
+                window.translationAPIServer.translationHistory = [];
+                window.translationAPIServer.connectionData.totalSessions = 0;
+                updateTranslationHistory();
+                updateConnectionStatus();
+            }
+        }
+
+        function exportData() {
+            const data = window.translationAPIServer.exportData();
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `translation-data-${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function refreshOpenAPI() {
+            updateOpenAPI();
+        }
+
+        // Initialize dashboard
+        function initDashboard() {
+            updateConnectionStatus();
+            updateConfiguration();
+            updateLanguages();
+            updateTranslationHistory();
+            updateOpenAPI();
+            
+            // Auto-refresh every 5 seconds
+            setInterval(() => {
+                updateConnectionStatus();
+                updateTranslationHistory();
+            }, 5000);
+        }
+
+        // Start the dashboard when page loads
+        document.addEventListener('DOMContentLoaded', initDashboard);
+    </script>
+</body>
+</html>

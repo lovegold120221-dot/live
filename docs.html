@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eburon AI Live Audio API Documentation</title>
+    <link rel="stylesheet" type="text/css" href="https://unpkg.com/swagger-ui-dist@5.10.5/swagger-ui.css" />
+    <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
+    <style>
+        html {
+            box-sizing: border-box;
+            overflow: -moz-scrollbars-vertical;
+            overflow-y: scroll;
+        }
+
+        *,
+        *:before,
+        *:after {
+            box-sizing: inherit;
+        }
+
+        body {
+            margin: 0;
+            background: #fafafa;
+        }
+
+        .swagger-ui .topbar {
+            background-color: #7c5cff;
+        }
+
+        .swagger-ui .topbar .download-url-wrapper .download-url-button {
+            background: #9579ff;
+            border-color: #9579ff;
+        }
+
+        .swagger-ui .topbar .download-url-wrapper .select-label {
+            color: white;
+        }
+
+        .swagger-ui .info {
+            margin: 50px 0;
+        }
+
+        .swagger-ui .info .title {
+            color: #7c5cff;
+        }
+
+        .swagger-ui .btn.authorize {
+            background: #7c5cff;
+            border-color: #7c5cff;
+        }
+
+        .swagger-ui .btn.authorize:hover {
+            background: #9579ff;
+            border-color: #9579ff;
+        }
+
+        .swagger-ui .opblock.opblock-post {
+            border-color: #34a853;
+            background: rgba(52, 168, 83, 0.1);
+        }
+
+        .swagger-ui .opblock.opblock-get {
+            border-color: #4285f4;
+            background: rgba(66, 133, 244, 0.1);
+        }
+
+        .swagger-ui .opblock.opblock-put {
+            border-color: #fbbc04;
+            background: rgba(251, 188, 4, 0.1);
+        }
+
+        .custom-header {
+            background: linear-gradient(135deg, #7c5cff 0%, #9579ff 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 0;
+        }
+
+        .custom-header h1 {
+            margin: 0;
+            font-size: 2rem;
+            font-weight: 300;
+        }
+
+        .custom-header p {
+            margin: 10px 0 0 0;
+            opacity: 0.9;
+        }
+
+        .api-status {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            z-index: 9999;
+            font-size: 14px;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .status-online {
+            background: #34a853;
+        }
+
+        .status-offline {
+            background: #ea4335;
+        }
+
+        .start-button {
+            background: linear-gradient(135deg, #7c5cff 0%, #9579ff 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 20px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(124, 92, 255, 0.3);
+        }
+
+        .start-button:hover {
+            background: linear-gradient(135deg, #9579ff 0%, #7c5cff 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(124, 92, 255, 0.4);
+        }
+
+        .start-button:active {
+            transform: translateY(0);
+        }
+
+        .start-button .material-symbols-outlined {
+            font-size: 20px;
+        }
+
+        .start-button.running {
+            background: linear-gradient(135deg, #34a853 0%, #4caf50 100%);
+            cursor: not-allowed;
+        }
+
+        .start-button.running:hover {
+            background: linear-gradient(135deg, #4caf50 0%, #34a853 100%);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="custom-header">
+        <h1>Eburon AI Live Audio API</h1>
+        <p>Comprehensive real-time audio system with Eburon AI Live Audio API</p>
+        <button id="start-server-btn" class="start-button" onclick="startServer()">
+            <span class="material-symbols-outlined">play_arrow</span>
+            Start Server
+        </button>
+    </div>
+
+    <div class="api-status">
+        <span class="status-indicator status-offline" id="status-indicator"></span>
+        <span id="status-text">Offline - Click Start Server</span>
+    </div>
+
+    <div id="swagger-ui"></div>
+
+    <script src="https://unpkg.com/swagger-ui-dist@5.10.5/swagger-ui-bundle.js"></script>
+    <script src="https://unpkg.com/swagger-ui-dist@5.10.5/swagger-ui-standalone-preset.js"></script>
+    <script>
+        // Load OpenAPI specification
+        let openApiSpec = null;
+
+        async function loadOpenAPISpec() {
+            try {
+                const response = await fetch('./openapi.json');
+                if (!response.ok) {
+                    throw new Error('Failed to load OpenAPI specification');
+                }
+                openApiSpec = await response.json();
+                initializeSwaggerUI();
+            } catch (error) {
+                console.error('Error loading OpenAPI spec:', error);
+                // Fallback to embedded specification
+                openApiSpec = getFallbackSpec();
+                initializeSwaggerUI();
+            }
+        }
+
+        async function startServer() {
+            const button = document.getElementById('start-server-btn');
+            const statusIndicator = document.getElementById('status-indicator');
+            const statusText = document.getElementById('status-text');
+
+            if (button.classList.contains('running')) {
+                return; // Already running
+            }
+
+            try {
+                // Update button state
+                button.classList.add('running');
+                button.innerHTML = '<span class="material-symbols-outlined">sync</span> Starting...';
+                button.disabled = true;
+
+                // Call the API server start endpoint
+                const response = await fetch('/api/server/start', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        autoConnect: true,
+                        config: {
+                            voice: 'Aoede',
+                            sampleRate: 16000,
+                            targetLanguage: 'auto'
+                        }
+                    })
+                });
+
+                // Check if response is valid JSON
+                const contentType = response.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    throw new Error('API server not responding correctly. Please ensure the main application is running.');
+                }
+
+                const result = await response.json();
+
+                if (response.ok && (result.success || (result.data && result.data.success))) {
+                    // Update UI to show running state
+                    button.innerHTML = '<span class="material-symbols-outlined">check_circle</span> Server Running';
+                    statusIndicator.classList.remove('status-offline');
+                    statusIndicator.classList.add('status-online');
+                    statusText.textContent = 'Server Online & Connected';
+
+                    // Refresh Swagger UI
+                    setTimeout(() => {
+                        if (window.ui) {
+                            window.ui.specActions.download();
+                        }
+                    }, 1000);
+                } else {
+                    throw new Error(result.error || result.message || 'Failed to start server');
+                }
+
+            } catch (error) {
+                console.error('Error starting server:', error);
+
+                // Reset button state
+                button.classList.remove('running');
+                button.innerHTML = '<span class="material-symbols-outlined">play_arrow</span> Start Server';
+                button.disabled = false;
+
+                // Update status with helpful error message
+                let errorMessage = error.message;
+                if (error.message.includes('Unexpected end of JSON input')) {
+                    errorMessage = 'API server not found. Please open index.html first to start the application.';
+                }
+
+                statusText.textContent = 'Error: ' + errorMessage;
+
+                // Show helpful alert
+                alert('Failed to start server: ' + errorMessage + '\n\nPlease make sure the main application (index.html) is running first.');
+            }
+        }
+
+        function getFallbackSpec() {
+            return {
+                "openapi": "3.0.3",
+                "info": {
+                    "title": "Translation Service API",
+                    "description": "Real-time audio translation service using Google Gemini Live API. Provides instant translation between 80+ languages with voice input and output.",
+                    "version": "1.0.0",
+                    "contact": {
+                        "name": "Translation Service Support",
+                        "email": "support@translation-service.com"
+                    },
+                    "license": {
+                        "name": "MIT",
+                        "url": "https://opensource.org/licenses/MIT"
+                    }
+                },
+                "servers": [
+                    {
+                        "url": window.location.origin,
+                        "description": "Development server"
+                    }
+                ],
+                "paths": {
+                    "/api/status": {
+                        "get": {
+                            "summary": "Get connection status",
+                            "description": "Retrieve current connection status and statistics",
+                            "tags": ["Status"],
+                            "responses": {
+                                "200": {
+                                    "description": "Connection status",
+                                    "content": {
+                                        "application/json": {
+                                            "schema": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "connected": { "type": "boolean" },
+                                                    "connectionTime": { "type": "string", "format": "date-time" },
+                                                    "lastActivity": { "type": "string", "format": "date-time" },
+                                                    "totalSessions": { "type": "integer" },
+                                                    "uptime": { "type": "integer" }
+                                                }
+                                            },
+                                            "example": {
+                                                "connected": true,
+                                                "connectionTime": "2025-01-09T11:30:00Z",
+                                                "lastActivity": "2025-01-09T11:35:00Z",
+                                                "totalSessions": 5,
+                                                "uptime": 300000
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "/api/translations": {
+                        "get": {
+                            "summary": "Get translation history",
+                            "description": "Retrieve recent translation inputs and outputs",
+                            "tags": ["Translations"],
+                            "parameters": [
+                                {
+                                    "name": "limit",
+                                    "in": "query",
+                                    "description": "Maximum number of translations to return",
+                                    "required": false,
+                                    "schema": {
+                                        "type": "integer",
+                                        "default": 50,
+                                        "minimum": 1,
+                                        "maximum": 100
+                                    }
+                                }
+                            ],
+                            "responses": {
+                                "200": {
+                                    "description": "Translation history",
+                                    "content": {
+                                        "application/json": {
+                                            "schema": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "history": {
+                                                        "type": "array",
+                                                        "items": {
+                                                            "type": "object",
+                                                            "properties": {
+                                                                "timestamp": { "type": "string", "format": "date-time" },
+                                                                "input": { "type": "string" },
+                                                                "output": { "type": "string" },
+                                                                "sourceLanguage": { "type": "string" },
+                                                                "targetLanguage": { "type": "string" },
+                                                                "confidence": { "type": "number", "format": "float" }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            },
+                                            "example": {
+                                                "history": [
+                                                    {
+                                                        "timestamp": "2025-01-09T11:35:00Z",
+                                                        "input": "Hello, how are you?",
+                                                        "output": "Hola, ¿cómo estás?",
+                                                        "sourceLanguage": "en",
+                                                        "targetLanguage": "es",
+                                                        "confidence": 0.95
+                                                    }
+                                                ]
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "/api/config": {
+                        "get": {
+                            "summary": "Get current configuration",
+                            "description": "Retrieve current translation service configuration",
+                            "tags": ["Configuration"],
+                            "responses": {
+                                "200": {
+                                    "description": "Current configuration",
+                                    "content": {
+                                        "application/json": {
+                                            "schema": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "voice": { "type": "string" },
+                                                    "sampleRate": { "type": "integer" },
+                                                    "targetLanguage": { "type": "string" },
+                                                    "systemInstruction": { "type": "string" },
+                                                    "temperature": { "type": "number", "format": "float" }
+                                                }
+                                            },
+                                            "example": {
+                                                "voice": "Aoede",
+                                                "sampleRate": 22000,
+                                                "targetLanguage": "es",
+                                                "systemInstruction": "YOU ARE A TRANSLATION MACHINE...",
+                                                "temperature": 0.3
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "put": {
+                            "summary": "Update configuration",
+                            "description": "Update translation service configuration",
+                            "tags": ["Configuration"],
+                            "requestBody": {
+                                "required": true,
+                                "content": {
+                                    "application/json": {
+                                        "schema": {
+                                            "type": "object",
+                                            "properties": {
+                                                "voice": { "type": "string" },
+                                                "sampleRate": { "type": "integer" },
+                                                "targetLanguage": { "type": "string" },
+                                                "systemInstruction": { "type": "string" },
+                                                "temperature": { "type": "number", "format": "float" }
+                                            }
+                                        }
+                                    }
+                                }
+                            },
+                            "responses": {
+                                "200": {
+                                    "description": "Configuration updated successfully",
+                                    "content": {
+                                        "application/json": {
+                                            "schema": {
+                                                "$ref": "#/components/schemas/Configuration"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "/api/languages": {
+                        "get": {
+                            "summary": "Get supported languages",
+                            "description": "Retrieve list of supported languages for translation",
+                            "tags": ["Languages"],
+                            "responses": {
+                                "200": {
+                                    "description": "List of supported languages",
+                                    "content": {
+                                        "application/json": {
+                                            "schema": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "languages": {
+                                                        "type": "array",
+                                                        "items": {
+                                                            "$ref": "#/components/schemas/Language"
+                                                        }
+                                                    }
+                                                }
+                                            },
+                                            "example": {
+                                                "languages": [
+                                                    { "code": "en", "name": "English", "nativeName": "English" },
+                                                    { "code": "es", "name": "Spanish", "nativeName": "Español" },
+                                                    { "code": "fr", "name": "French", "nativeName": "Français" }
+                                                ]
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "/api/health": {
+                        "get": {
+                            "summary": "Health check",
+                            "description": "Check if the translation service is running and accessible",
+                            "tags": ["Health"],
+                            "responses": {
+                                "200": {
+                                    "description": "Service is healthy",
+                                    "content": {
+                                        "application/json": {
+                                            "schema": {
+                                                "$ref": "#/components/schemas/HealthResponse"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "components": {
+                    "schemas": {
+                        "Language": {
+                            "type": "object",
+                            "properties": {
+                                "code": { "type": "string", "description": "ISO 639-1 language code" },
+                                "name": { "type": "string", "description": "Language name in English" },
+                                "nativeName": { "type": "string", "description": "Language name in its native script" },
+                                "supported": { "type": "boolean", "description": "Whether this language is fully supported" }
+                            }
+                        },
+                        "Configuration": {
+                            "type": "object",
+                            "properties": {
+                                "voice": { "type": "string", "description": "Voice name for audio output" },
+                                "sampleRate": { "type": "integer", "description": "Audio sample rate in Hz" },
+                                "targetLanguage": { "type": "string", "description": "Default target language" },
+                                "systemInstruction": { "type": "string", "description": "System instruction for the AI model" },
+                                "temperature": { "type": "number", "format": "float", "description": "AI model temperature (0-1)" }
+                            }
+                        },
+                        "HealthResponse": {
+                            "type": "object",
+                            "properties": {
+                                "status": { "type": "string", "example": "healthy" },
+                                "timestamp": { "type": "string", "format": "date-time" },
+                                "version": { "type": "string", "example": "1.0.0" },
+                                "uptime": { "type": "string", "description": "Service uptime" },
+                                "apiStatus": {
+                                    "type": "object",
+                                    "properties": {
+                                        "gemini": { "type": "string", "example": "connected" },
+                                        "websocket": { "type": "string", "example": "active" }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    { "name": "Status", "description": "Connection and service status" },
+                    { "name": "Translations", "description": "Translation operations and history" },
+                    { "name": "Configuration", "description": "Service configuration management" },
+                    { "name": "Languages", "description": "Language management" },
+                    { "name": "Health", "description": "Health monitoring" }
+                ]
+            };
+        }
+
+        function initializeSwaggerUI() {
+            const ui = SwaggerUIBundle({
+                url: '', // We'll provide the spec directly
+                spec: openApiSpec,
+                dom_id: '#swagger-ui',
+                deepLinking: true,
+                presets: [
+                    SwaggerUIBundle.presets.apis,
+                    SwaggerUIStandalonePreset
+                ],
+                plugins: [
+                    SwaggerUIBundle.plugins.DownloadUrl
+                ],
+                layout: "StandaloneLayout",
+                defaultModelsExpandDepth: 2,
+                defaultModelExpandDepth: 2,
+                displayRequestDuration: true,
+                docExpansion: "list",
+                filter: true,
+                persistAuthorization: true,
+                tryItOutEnabled: true
+            });
+
+            // Custom request interceptor to handle API calls
+            ui.initOAuth({
+                clientId: "your-client-id",
+                clientSecret: "your-client-secret",
+                realm: "your-realms",
+                appName: "Translation Service API",
+                scopeSeparator: " ",
+                additionalQueryStringParams: {}
+            });
+        }
+
+        // Check API status
+        async function checkAPIStatus() {
+            const statusIndicator = document.getElementById('status-indicator');
+            const statusText = document.getElementById('status-text');
+
+            try {
+                // Try to access the API server from the main window
+                if (window.opener && window.opener.translationAPIServer) {
+                    const status = window.opener.translationAPIServer.getConnectionStatus();
+                    statusIndicator.className = 'status-indicator ' + (status.isConnected ? 'status-online' : 'status-offline');
+                    statusText.textContent = status.isConnected ? 'API Online' : 'API Offline';
+                } else {
+                    // Fallback: try to fetch from API endpoint
+                    const response = await fetch('./api/health');
+                    if (response.ok) {
+                        statusIndicator.className = 'status-indicator status-online';
+                        statusText.textContent = 'API Online';
+                    } else {
+                        throw new Error('API not responding');
+                    }
+                }
+            } catch (error) {
+                statusIndicator.className = 'status-indicator status-offline';
+                statusText.textContent = 'API Offline';
+            }
+        }
+
+        // Initialize the HTTP server when the page loads
+        function initializeHTTPServer() {
+            // Initialize the HTTP server here
+        }
+
+        // Check initial connection status
+        function checkInitialConnectionStatus() {
+            setTimeout(async () => {
+                try {
+                    const response = await fetch('/api/connection/status');
+                    const result = await response.json();
+
+                    if (response.ok && result.data && result.data.connected) {
+                        const button = document.getElementById('start-server-btn');
+                        const statusIndicator = document.getElementById('status-indicator');
+                        const statusText = document.getElementById('status-text');
+
+                        button.classList.add('running');
+                        button.innerHTML = '<span class="material-symbols-outlined">check_circle</span> Server Running';
+                        button.disabled = true;
+
+                        statusIndicator.classList.remove('status-offline');
+                        statusIndicator.classList.add('status-online');
+                        statusText.textContent = 'Server Online & Connected';
+                    }
+                } catch (error) {
+                    // API server not available yet, that's okay
+                    console.log('API server not yet available');
+                }
+            }, 500);
+        }
+
+        // Check initial status after loading
+        checkInitialConnectionStatus();
+
+        // Initialize the page
+        document.addEventListener('DOMContentLoaded', function () {
+            loadOpenAPISpec();
+            checkAPIStatus();
+
+            // Check status every 10 seconds
+            setInterval(checkAPIStatus, 10000);
+        });
+
+        // Handle API requests when "Try it out" is clicked
+        window.addEventListener('load', function () {
+            // Intercept fetch calls to handle our JavaScript API
+            const originalFetch = window.fetch;
+            window.fetch = function (url, options) {
+                if (url.startsWith('/api/') && window.opener && window.opener.translationAPIServer) {
+                    // Handle the request through our JavaScript API server
+                    return new Promise((resolve, reject) => {
+                        setTimeout(() => {
+                            try {
+                                let response;
+
+                                switch (url) {
+                                    case '/api/status':
+                                        response = window.opener.translationAPIServer.getConnectionStatus();
+                                        break;
+                                    case '/api/translations':
+                                        const urlParams = new URLSearchParams(options.url ? options.url.split('?')[1] : '');
+                                        const limit = parseInt(urlParams.get('limit')) || 50;
+                                        response = { history: window.opener.translationAPIServer.getTranslationHistory(limit) };
+                                        break;
+                                    case '/api/config':
+                                        response = window.opener.translationAPIServer.getCurrentConfiguration();
+                                        break;
+                                    case '/api/languages':
+                                        response = { languages: window.opener.translationAPIServer.getSupportedLanguages() };
+                                        break;
+                                    case '/api/health':
+                                        response = {
+                                            status: 'healthy',
+                                            timestamp: new Date().toISOString(),
+                                            version: '1.0.0',
+                                            uptime: '0s',
+                                            apiStatus: {
+                                                gemini: 'connected',
+                                                websocket: 'active'
+                                            }
+                                        };
+                                        break;
+                                    default:
+                                        reject(new Error(`Endpoint not found: ${url}`));
+                                        return;
+                                }
+
+                                resolve(new Response(JSON.stringify(response), {
+                                    status: 200,
+                                    headers: { 'Content-Type': 'application/json' }
+                                }));
+
+                            } catch (error) {
+                                reject(new Response(JSON.stringify({ error: error.message }), {
+                                    status: 500,
+                                    headers: { 'Content-Type': 'application/json' }
+                                }));
+                            }
+                        }, 100); // Simulate network delay
+                    });
+                }
+
+                return originalFetch.apply(this, arguments);
+            };
+        });
+    </script>
+</body>
+
+</html>
